@@ -1,0 +1,24 @@
+# Node.js modules
+node_modules/
+
+# Salesforce DX
+.sfdx/
+
+# VS Code workspace settings and extensions
+.vscode/
+
+# Test coverage directory
+coverage/
+
+# Ignore config and local files
+.DS_Store
+.env
+*.log
+*.tmp
+
+# Salesforce scratch orgs and local build artifacts
+.build/
+.packaging/
+
+# Misc
+.nyc_output/
