@@ -1,0 +1,33 @@
+Platform Event: Task_Update_Event__e
+=====================================
+
+Create these fields in the Platform Event:
+
+1. Field Name: Task Id
+   API Name: Task_Id__c
+   Data Type: Text
+   Length: 18
+   Required: Yes
+
+2. Field Name: Action Type  
+   API Name: Action_Type__c
+   Data Type: Text
+   Length: 50
+   Required: Yes
+
+3. Field Name: New Column
+   API Name: New_Column__c  
+   Data Type: Text
+   Length: 50
+   Required: No
+
+4. Field Name: Updated By
+   API Name: Updated_By__c
+   Data Type: Text  
+   Length: 18
+   Required: No
+
+5. Field Name: Timestamp
+   API Name: Timestamp__c
+   Data Type: Date/Time
+   Required: No

@@ -1,0 +1,322 @@
+<template>
+    <div class="kanban-container">
+        <!-- Header -->
+        <div class="kanban-header">
+            <lightning-icon icon-name="utility:kanban" size="medium"></lightning-icon>
+            <h1 class="slds-text-heading_large slds-m-left_small">Kanban Board</h1>
+            <div class="header-actions">
+                <template if:true={shouldShowKanban}>
+                    <lightning-button-icon 
+                        icon-name="utility:switch" 
+                        variant="neutral" 
+                        onclick={handleChangeProject}
+                        alternative-text="Change Project"
+                        title="Change Project">
+                    </lightning-button-icon>
+                    <lightning-button-icon 
+                        icon-name="utility:add" 
+                        variant="brand" 
+                        onclick={handleNewTask}
+                        alternative-text="Add New Task"
+                        title="Add New Task">
+                    </lightning-button-icon>
+                    <lightning-button-icon 
+                        icon-name="utility:refresh" 
+                        variant="neutral" 
+                        onclick={handleRefresh}
+                        alternative-text="Refresh Board"
+                        title="Refresh Board">
+                    </lightning-button-icon>
+                </template>
+            </div>
+        </div>
+
+        <!-- Loading State -->
+        <template if:true={isLoading}>
+            <div class="loading-container">
+                <lightning-spinner alternative-text="Loading..." size="medium"></lightning-spinner>
+            </div>
+        </template>
+
+        <!-- Error State -->
+        <template if:true={error}>
+            <div class="slds-notify slds-notify_alert slds-alert_error" role="alert">
+                <lightning-icon icon-name="utility:error" size="x-small"></lightning-icon>
+                <span class="slds-assistive-text">Error</span>
+                <h2>{error}</h2>
+            </div>
+        </template>
+
+        <!-- Debug Info -->
+        <div class="slds-box slds-m-bottom_small">
+            <p><strong>Debug Info:</strong></p>
+            <p>effectiveProjectId: {effectiveProjectId}</p>
+            <p>showProjectSelector: {showProjectSelector}</p>
+            <p>shouldShowProjectSelector: {shouldShowProjectSelector}</p>
+            <p>availableProjects length: {availableProjects.length}</p>
+            <p>isLoading: {isLoading}</p>
+            <p>error: {error}</p>
+        </div>
+
+        <!-- Project Selector -->
+        <template if:true={shouldShowProjectSelector}>
+            <div class="project-selector-container">
+                <div class="slds-align_absolute-center slds-p-around_large">
+                    <div class="slds-text-align_center">
+                        <lightning-icon icon-name="standard:work_type_group" size="large"></lightning-icon>
+                        <h2 class="slds-text-heading_medium slds-m-vertical_medium">
+                            Select a Project
+                        </h2>
+                        <p class="slds-text-body_regular slds-m-bottom_large">
+                            Choose a project to view its Kanban board and manage tasks.
+                        </p>
+                        
+                        <div class="project-grid">
+                            <template for:each={availableProjects} for:item="project">
+                                <div key={project.value} 
+                                     class="project-card" 
+                                     onclick={handleProjectSelect}
+                                     data-value={project.value}>
+                                    <div class="project-card-header">
+                                        <h3 class="project-title">{project.label}</h3>
+                                        <span class={project.statusClass}>{project.status}</span>
+                                    </div>
+                                    <template if:true={project.description}>
+                                        <p class="project-description">{project.description}</p>
+                                    </template>
+                                </div>
+                            </template>
+                        </div>
+                        
+                        <template if:false={availableProjects.length}>
+                            <div class="slds-text-align_center slds-m-top_large">
+                                <p><strong>No projects found!</strong></p>
+                                <p>This could mean:</p>
+                                <ul class="slds-list_dotted slds-text-align_left" style="display: inline-block; margin: 1rem 0;">
+                                    <li>No Project__c records exist in your org</li>
+                                    <li>All projects have Status values not in: Planning, In Progress, Active, On Hold</li>
+                                    <li>User permissions prevent access to Project__c records</li>
+                                </ul>
+                                
+                                <div class="slds-m-top_medium">
+                                    <lightning-button 
+                                        label="Retry Loading Projects" 
+                                        onclick={handleRetryProjects}
+                                        variant="brand"
+                                        class="slds-m-right_small">
+                                    </lightning-button>
+                                    <lightning-button 
+                                        label="Show Debug Info" 
+                                        onclick={handleShowDebugInfo}
+                                        variant="neutral">
+                                    </lightning-button>
+                                </div>
+                                
+                                <template if:true={debugInfo}>
+                                    <div class="slds-box slds-m-top_medium slds-text-align_left">
+                                        <h4><strong>Project Debug Information:</strong></h4>
+                                        <pre style="white-space: pre-line; font-size: 0.875rem;">{debugInfo}</pre>
+                                    </div>
+                                </template>
+                            </div>
+                        </template>
+                    </div>
+                </div>
+            </div>
+        </template>
+
+        <!-- Fallback when nothing shows -->
+        <template if:false={shouldShowProjectSelector}>
+            <template if:false={shouldShowKanban}>
+                <template if:false={isLoading}>
+                    <div class="slds-text-align_center slds-p-around_large">
+                        <h3>Component Loading Issue</h3>
+                        <p>Neither project selector nor Kanban board is showing.</p>
+                        <lightning-button 
+                            label="Force Load Projects" 
+                            onclick={handleForceLoadProjects}
+                            variant="brand">
+                        </lightning-button>
+                    </div>
+                </template>
+            </template>
+        </template>
+
+        <!-- Kanban Board -->
+        <template if:true={shouldShowKanban}>
+            <template if:false={isLoading}>
+                <div class="kanban-board" ondrop={handleDrop} ondragover={handleDragOver}>
+                <!-- Columns -->
+                <template for:each={columns} for:item="column">
+                    <div key={column.name} class="kanban-column" data-column={column.name}>
+                        <!-- Column Header -->
+                        <div class="column-header">
+                            <div class="column-title">
+                                <lightning-icon icon-name={column.icon} size="small"></lightning-icon>
+                                <span class="title-text">{column.label}</span>
+                                <span class="task-count slds-badge">
+                                    {column.taskCount}
+                                </span>
+                            </div>
+                        </div>
+
+                        <!-- Column Body -->
+                        <div class="column-body" data-column={column.name}>
+                            <!-- Task Cards -->
+                            <template for:each={column.tasks} for:item="taskWrapper">
+                                <div key={taskWrapper.task.Id} 
+                                     class="task-card"
+                                     data-task-id={taskWrapper.task.Id}
+                                     draggable="true"
+                                     ondragstart={handleDragStart}
+                                     onclick={handleTaskClick}>
+                                    
+                                    <!-- Priority Indicator -->
+                                    <div class={taskWrapper.priorityClass}></div>
+
+                                    <!-- Task Header -->
+                                    <div class="task-header">
+                                        <h3 class="task-title">{taskWrapper.task.Task_Name__c}</h3>
+                                        <div class="task-actions">
+                                            <lightning-button-menu alternative-text="Task Actions" variant="border-filled" menu-alignment="right">
+                                                <lightning-menu-item value="edit" label="Edit" onclick={handleEditTask}></lightning-menu-item>
+                                                <lightning-menu-item value="delete" label="Delete" onclick={handleDeleteTask}></lightning-menu-item>
+                                            </lightning-button-menu>
+                                        </div>
+                                    </div>
+
+                                    <!-- Task Description -->
+                                    <template if:true={taskWrapper.task.Description__c}>
+                                        <p class="task-description">{taskWrapper.task.Description__c}</p>
+                                    </template>
+
+                                    <!-- Task Meta Information -->
+                                    <div class="task-meta">
+                                        <!-- Story Points -->
+                                        <template if:true={taskWrapper.task.Story_Points__c}>
+                                            <span class="story-points slds-badge slds-badge_lightest">
+                                                <lightning-icon icon-name="utility:apps" size="xx-small"></lightning-icon>
+                                                {taskWrapper.task.Story_Points__c}
+                                            </span>
+                                        </template>
+
+                                        <!-- Due Date -->
+                                        <template if:true={taskWrapper.task.Due_Date__c}>
+                                            <span class={taskWrapper.dueDateClass}>
+                                                <lightning-icon icon-name="utility:event" size="xx-small"></lightning-icon>
+{taskWrapper.formattedDueDate}
+                                            </span>
+                                        </template>
+                                    </div>
+
+                                    <!-- Assigned User -->
+                                    <template if:true={taskWrapper.assignedUserName}>
+                                        <div class="assigned-user">
+                                            <template if:true={taskWrapper.assignedUserPhoto}>
+                                                <img src={taskWrapper.assignedUserPhoto} 
+                                                     alt={taskWrapper.assignedUserName}
+                                                     class="user-avatar">
+                                            </template>
+                                            <template if:false={taskWrapper.assignedUserPhoto}>
+                                                <lightning-icon icon-name="standard:user" size="x-small" class="user-avatar-icon"></lightning-icon>
+                                            </template>
+                                            <span class="user-name">{taskWrapper.assignedUserName}</span>
+                                        </div>
+                                    </template>
+
+                                    <!-- Real-time Activity Indicator -->
+                                    <template if:true={taskWrapper.isBeingEdited}>
+                                        <div class="activity-indicator">
+                                            <lightning-icon icon-name="utility:edit" size="xx-small"></lightning-icon>
+                                            <span>Being edited...</span>
+                                        </div>
+                                    </template>
+                                </div>
+                            </template>
+
+                            <!-- Add Task Button -->
+                            <template if:true={column.showAddButton}>
+                                <div class="add-task-card" onclick={handleNewTaskInColumn} data-column={column.name}>
+                                    <lightning-icon icon-name="utility:add" size="small"></lightning-icon>
+                                    <span>Add a task</span>
+                                </div>
+                            </template>
+                        </div>
+                    </div>
+                </template>
+            </div>
+            </template>
+        </template>
+
+        <!-- New/Edit Task Modal -->
+        <template if:true={showTaskModal}>
+            <section role="dialog" tabindex="-1" class="slds-modal slds-fade-in-open">
+                <div class="slds-modal__container">
+                    <header class="slds-modal__header">
+                        <lightning-button-icon 
+                            icon-name="utility:close" 
+                            onclick={handleCloseModal}
+                            alternative-text="Close"
+                            variant="bare-inverse"
+                            class="slds-modal__close">
+                        </lightning-button-icon>
+                        <h2 class="slds-text-heading_medium slds-hyphenate">
+                            {modalTitle}
+                        </h2>
+                    </header>
+                    <div class="slds-modal__content slds-p-around_medium">
+                        <lightning-record-edit-form 
+                            object-api-name="Task__c"
+                            record-id={editingTaskId}
+                            onsuccess={handleTaskSave}
+                            onerror={handleTaskError}>
+                            
+                            <lightning-input-field field-name="Task_Name__c" required></lightning-input-field>
+                            <lightning-input-field field-name="Description__c"></lightning-input-field>
+                            <lightning-input-field field-name="Priority__c"></lightning-input-field>
+                            <lightning-input-field field-name="Story_Points__c"></lightning-input-field>
+                            <lightning-input-field field-name="Due_Date__c"></lightning-input-field>
+                            <lightning-input-field field-name="Assigned_To__c"></lightning-input-field>
+                            
+                            <!-- Hidden fields for defaults -->
+                            <template if:false={editingTaskId}>
+                                <lightning-input-field field-name="Project__c" value={projectId} class="slds-hide"></lightning-input-field>
+                                <lightning-input-field field-name="Status__c" value={defaultColumn} class="slds-hide"></lightning-input-field>
+                                <lightning-input-field field-name="Kanban_Column__c" value={defaultColumn} class="slds-hide"></lightning-input-field>
+                            </template>
+                            
+                            <div class="slds-modal__footer">
+                                <lightning-button 
+                                    variant="neutral" 
+                                    label="Cancel" 
+                                    onclick={handleCloseModal}>
+                                </lightning-button>
+                                <lightning-button 
+                                    variant="brand" 
+                                    type="submit" 
+                                    label={saveButtonLabel}
+                                    class="slds-m-left_x-small">
+                                </lightning-button>
+                            </div>
+                        </lightning-record-edit-form>
+                    </div>
+                </div>
+            </section>
+            <div class="slds-backdrop slds-backdrop_open"></div>
+        </template>
+
+        <!-- Real-time Update Toast -->
+        <template if:true={showUpdateToast}>
+            <div class="update-toast">
+                <lightning-icon icon-name="utility:notification" size="small"></lightning-icon>
+                <span>Board updated by another user</span>
+                <lightning-button-icon 
+                    icon-name="utility:close" 
+                    size="small"
+                    onclick={handleCloseToast}
+                    alternative-text="Close">
+                </lightning-button-icon>
+            </div>
+        </template>
+    </div>
+</template>
