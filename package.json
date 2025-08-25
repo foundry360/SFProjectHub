@@ -13,7 +13,11 @@
     "prettier": "prettier --write \"**/*.{cls,cmp,component,css,html,js,json,md,page,trigger,xml,yaml,yml}\"",
     "prettier:verify": "prettier --check \"**/*.{cls,cmp,component,css,html,js,json,md,page,trigger,xml,yaml,yml}\"",
     "prepare": "husky || true",
-    "precommit": "lint-staged"
+    "precommit": "lint-staged",
+    "generate:metadata": "node generate-metadata.js",
+    "clean:metadata": "rm -rf force-app/main/default/objects/Portfolio__c force-app/main/default/objects/Project__c force-app/main/default/objects/Sprint__c force-app/main/default/objects/Task__c force-app/main/default/objects/Time_Entry__c force-app/main/default/objects/Resource__c force-app/main/default/objects/Document__c",
+    "deploy:objects": "sf project deploy start --source-dir force-app/main/default/objects",
+    "validate:objects": "sf project deploy validate --source-dir force-app/main/default/objects"
   },
   "devDependencies": {
     "@lwc/eslint-plugin-lwc": "^3.1.0",
