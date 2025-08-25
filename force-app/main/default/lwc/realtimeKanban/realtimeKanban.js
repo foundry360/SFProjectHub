@@ -79,12 +79,20 @@ export default class RealtimeKanban extends LightningElement {
     }
 
     connectedCallback() {
+        console.log('Kanban component connected');
+        console.log('effectiveProjectId:', this.effectiveProjectId);
+        console.log('projectId:', this.projectId);
+        console.log('recordId:', this.recordId);
+        
         this.subscribeToEvents();
         this.registerErrorListener();
         
         // If no projectId is provided, show project selector
         if (!this.effectiveProjectId) {
+            console.log('No effectiveProjectId, loading projects...');
             this.loadProjects();
+        } else {
+            console.log('effectiveProjectId found, component should show Kanban');
         }
     }
 
@@ -410,19 +418,25 @@ export default class RealtimeKanban extends LightningElement {
     // Project selection methods
     async loadProjects() {
         try {
+            console.log('Loading projects...');
             this.isLoading = true;
             const projects = await getProjects();
+            console.log('Projects loaded:', projects);
             this.availableProjects = projects.map(project => ({
                 ...project,
                 statusClass: this.getProjectStatusClass(project.status)
             }));
             this.showProjectSelector = true;
             this.error = undefined;
+            console.log('Project selector should now show');
         } catch (error) {
-            this.error = 'Error loading projects: ' + error.body.message;
+            console.error('Error loading projects:', error);
+            this.error = 'Error loading projects: ' + (error.body?.message || error.message || 'Unknown error');
             this.availableProjects = [];
+            this.showProjectSelector = true; // Show selector even on error so user can retry
         } finally {
             this.isLoading = false;
+            console.log('loadProjects completed. showProjectSelector:', this.showProjectSelector);
         }
     }
     
@@ -452,6 +466,17 @@ export default class RealtimeKanban extends LightningElement {
     handleChangeProject() {
         this.selectedProjectId = null;
         this.columns = [...COLUMNS];
+        this.loadProjects();
+    }
+
+    handleRetryProjects() {
+        this.loadProjects();
+    }
+
+    handleForceLoadProjects() {
+        this.showProjectSelector = false;
+        this.selectedProjectId = null;
+        this.error = null;
         this.loadProjects();
     }
 

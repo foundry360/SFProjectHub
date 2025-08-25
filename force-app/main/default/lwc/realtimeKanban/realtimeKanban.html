@@ -47,6 +47,17 @@
             </div>
         </template>
 
+        <!-- Debug Info -->
+        <div class="slds-box slds-m-bottom_small">
+            <p><strong>Debug Info:</strong></p>
+            <p>effectiveProjectId: {effectiveProjectId}</p>
+            <p>showProjectSelector: {showProjectSelector}</p>
+            <p>shouldShowProjectSelector: {shouldShowProjectSelector}</p>
+            <p>availableProjects length: {availableProjects.length}</p>
+            <p>isLoading: {isLoading}</p>
+            <p>error: {error}</p>
+        </div>
+
         <!-- Project Selector -->
         <template if:true={shouldShowProjectSelector}>
             <div class="project-selector-container">
@@ -77,16 +88,36 @@
                             </template>
                         </div>
                         
-                        <template if:true={availableProjects.length}>
-                            <template if:false={availableProjects.length}>
-                                <div class="slds-text-align_center slds-m-top_large">
-                                    <p>No active projects found. Please create a project first.</p>
-                                </div>
-                            </template>
+                        <template if:false={availableProjects.length}>
+                            <div class="slds-text-align_center slds-m-top_large">
+                                <p>No active projects found. Please create a project first.</p>
+                                <lightning-button 
+                                    label="Retry Loading Projects" 
+                                    onclick={handleRetryProjects}
+                                    variant="brand">
+                                </lightning-button>
+                            </div>
                         </template>
                     </div>
                 </div>
             </div>
+        </template>
+
+        <!-- Fallback when nothing shows -->
+        <template if:false={shouldShowProjectSelector}>
+            <template if:false={shouldShowKanban}>
+                <template if:false={isLoading}>
+                    <div class="slds-text-align_center slds-p-around_large">
+                        <h3>Component Loading Issue</h3>
+                        <p>Neither project selector nor Kanban board is showing.</p>
+                        <lightning-button 
+                            label="Force Load Projects" 
+                            onclick={handleForceLoadProjects}
+                            variant="brand">
+                        </lightning-button>
+                    </div>
+                </template>
+            </template>
         </template>
 
         <!-- Kanban Board -->
