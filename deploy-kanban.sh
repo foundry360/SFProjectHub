@@ -3,13 +3,39 @@
 echo "🚀 Deploying Realtime Kanban Board Components..."
 echo "================================================="
 
+# Check which CLI version is available
+if command -v sf &> /dev/null; then
+    echo "📦 Using Salesforce CLI v2 (sf)..."
+    CLI_CMD="sf"
+    DEPLOY_CMD="project deploy start"
+    VALIDATE_CMD="project deploy validate"
+elif command -v sfdx &> /dev/null; then
+    echo "📦 Using Salesforce CLI v1 (sfdx)..."
+    CLI_CMD="sfdx"
+    DEPLOY_CMD="force:source:deploy"
+    VALIDATE_CMD="force:source:deploy"
+else
+    echo "❌ Neither 'sf' nor 'sfdx' CLI found. Please install Salesforce CLI."
+    exit 1
+fi
+
 # Deploy the Kanban components using the specific package
-echo "📦 Deploying components to default org..."
-sfdx force:source:deploy -x manifest/kanban-package.xml --checkonly
+echo "📦 Validating deployment to default org..."
+
+if [ "$CLI_CMD" = "sf" ]; then
+    sf project deploy validate --manifest manifest/kanban-package.xml
+else
+    sfdx force:source:deploy -x manifest/kanban-package.xml --checkonly
+fi
 
 if [ $? -eq 0 ]; then
     echo "✅ Validation successful! Proceeding with actual deployment..."
-    sfdx force:source:deploy -x manifest/kanban-package.xml
+    
+    if [ "$CLI_CMD" = "sf" ]; then
+        sf project deploy start --manifest manifest/kanban-package.xml
+    else
+        sfdx force:source:deploy -x manifest/kanban-package.xml
+    fi
     
     if [ $? -eq 0 ]; then
         echo ""
