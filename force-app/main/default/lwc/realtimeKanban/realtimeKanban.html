@@ -90,12 +90,34 @@
                         
                         <template if:false={availableProjects.length}>
                             <div class="slds-text-align_center slds-m-top_large">
-                                <p>No active projects found. Please create a project first.</p>
-                                <lightning-button 
-                                    label="Retry Loading Projects" 
-                                    onclick={handleRetryProjects}
-                                    variant="brand">
-                                </lightning-button>
+                                <p><strong>No projects found!</strong></p>
+                                <p>This could mean:</p>
+                                <ul class="slds-list_dotted slds-text-align_left" style="display: inline-block; margin: 1rem 0;">
+                                    <li>No Project__c records exist in your org</li>
+                                    <li>All projects have Status values not in: Planning, In Progress, Active, On Hold</li>
+                                    <li>User permissions prevent access to Project__c records</li>
+                                </ul>
+                                
+                                <div class="slds-m-top_medium">
+                                    <lightning-button 
+                                        label="Retry Loading Projects" 
+                                        onclick={handleRetryProjects}
+                                        variant="brand"
+                                        class="slds-m-right_small">
+                                    </lightning-button>
+                                    <lightning-button 
+                                        label="Show Debug Info" 
+                                        onclick={handleShowDebugInfo}
+                                        variant="neutral">
+                                    </lightning-button>
+                                </div>
+                                
+                                <template if:true={debugInfo}>
+                                    <div class="slds-box slds-m-top_medium slds-text-align_left">
+                                        <h4><strong>Project Debug Information:</strong></h4>
+                                        <pre style="white-space: pre-line; font-size: 0.875rem;">{debugInfo}</pre>
+                                    </div>
+                                </template>
                             </div>
                         </template>
                     </div>

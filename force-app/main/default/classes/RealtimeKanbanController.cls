@@ -128,13 +128,31 @@ public with sharing class RealtimeKanbanController {
     @AuraEnabled(cacheable=true)
     public static List<ProjectOption> getProjects() {
         try {
-            List<Project__c> projects = [
+            // First, get all projects to see what exists
+            List<Project__c> allProjects = [
                 SELECT Id, Name, Project_Name__c, Status__c, Description__c
                 FROM Project__c 
-                WHERE Status__c IN ('Planning', 'In Progress', 'On Hold')
-                ORDER BY Project_Name__c ASC 
+                ORDER BY Project_Name__c ASC, Name ASC 
                 LIMIT 100
             ];
+            
+            // Filter for active projects, but include projects with null status
+            List<Project__c> projects = new List<Project__c>();
+            for (Project__c project : allProjects) {
+                // Include projects that are likely active or have no status set
+                if (project.Status__c == null || 
+                    project.Status__c == 'Planning' || 
+                    project.Status__c == 'In Progress' || 
+                    project.Status__c == 'Active' ||
+                    project.Status__c == 'On Hold') {
+                    projects.add(project);
+                }
+            }
+            
+            // If no active projects found, return all projects
+            if (projects.isEmpty() && !allProjects.isEmpty()) {
+                projects = allProjects;
+            }
             
             List<ProjectOption> projectOptions = new List<ProjectOption>();
             for (Project__c project : projects) {
@@ -149,6 +167,33 @@ public with sharing class RealtimeKanbanController {
             return projectOptions;
         } catch (Exception e) {
             throw new AuraHandledException('Error retrieving projects: ' + e.getMessage());
+        }
+    }
+    
+    @AuraEnabled(cacheable=true)
+    public static String getProjectDebugInfo() {
+        try {
+            Integer totalCount = [SELECT COUNT() FROM Project__c];
+            
+            List<AggregateResult> statusCounts = [
+                SELECT Status__c, COUNT(Id) recordCount 
+                FROM Project__c 
+                GROUP BY Status__c
+                ORDER BY COUNT(Id) DESC
+            ];
+            
+            String result = 'Total Projects: ' + totalCount + '\n';
+            result += 'Status Breakdown:\n';
+            
+            for (AggregateResult ar : statusCounts) {
+                String status = (String)ar.get('Status__c');
+                Integer count = (Integer)ar.get('recordCount');
+                result += '- ' + (status != null ? status : 'NULL') + ': ' + count + '\n';
+            }
+            
+            return result;
+        } catch (Exception e) {
+            return 'Error getting debug info: ' + e.getMessage();
         }
     }
     

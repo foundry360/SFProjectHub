@@ -5,6 +5,7 @@ import { subscribe, unsubscribe, onError } from 'lightning/empApi';
 import getTasks from '@salesforce/apex/RealtimeKanbanController.getTasks';
 import updateTaskColumn from '@salesforce/apex/RealtimeKanbanController.updateTaskColumn';
 import getProjects from '@salesforce/apex/RealtimeKanbanController.getProjects';
+import getProjectDebugInfo from '@salesforce/apex/RealtimeKanbanController.getProjectDebugInfo';
 
 const COLUMNS = [
     { name: 'To Do', label: 'To Do', icon: 'utility:record_create', taskCount: 0, tasks: [], showAddButton: true },
@@ -28,6 +29,7 @@ export default class RealtimeKanban extends LightningElement {
     @track editingTaskId;
     @track defaultColumn = 'To Do';
     @track selectedProjectId;
+    @track debugInfo = '';
 
     // Drag and drop state
     draggedTaskId;
@@ -478,6 +480,14 @@ export default class RealtimeKanban extends LightningElement {
         this.selectedProjectId = null;
         this.error = null;
         this.loadProjects();
+    }
+
+    async handleShowDebugInfo() {
+        try {
+            this.debugInfo = await getProjectDebugInfo();
+        } catch (error) {
+            this.debugInfo = 'Error getting debug info: ' + error.message;
+        }
     }
 
     showToast(title, message, variant) {
